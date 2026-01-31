@@ -1,74 +1,81 @@
-//HTTP REQUEST GETALL GETONE PUT POST DELETE
-const URL_REQUEST = 'http://localhost:3000/posts'
-async function GetData() {
-    try {
-        let res = await fetch(URL_REQUEST);
-        let posts = await res.json();
-        
-        let body_of_table = document.getElementById('table-body')
-        body_of_table.innerHTML = "";
-        for (const post of posts) {
-            body_of_table.innerHTML +=
-                `<tr>
-                <td>${post.id}</td>
-                <td>${post.title}</td>
-                <td>${post.views}</td>
-                <td><input type='submit' onclick='Delete(${post.id})' value='Delete'/></td>
-            </tr>`
-        }
-    } catch (error) {
-        console.log(error);
+const express = require('express')
+const app = express()
+const port = 3000
+let data = [
+    {
+        "id": "1",
+        "title": "a title",
+        "views": 100
+    },
+    {
+        "id": "2",
+        "title": "another title",
+        "views": 200
+    },
+    {
+        "id": "3",
+        "title": "another titlee",
+        "views": 300
+    },
+    {
+        "id": "4",
+        "title": "haha",
+        "views": 700
+    },
+    {
+        "id": "5",
+        "title": "hohio",
+        "views": 900
+    },
+    {
+        "title": "Ngao",
+        "views": 800,
+        "id": "7",
+        "isDeleted": false
+    },
+    {
+        "title": "Mu",
+        "views": 1000,
+        "id": "10"
     }
-}
-// nếu id không tồn tai -> tạo mới
-//id tồn tại thì sử dụng put 
-async function Save() {
-    let id = document.getElementById("id_txt").value;
-    let title = document.getElementById("title_txt").value;
-    let views = document.getElementById("views_txt").value;
-    let resAnItem = await fetch(URL_REQUEST + '/' + id);
-    let res;
-    if (resAnItem.ok) {//ton tai roi - PUT
-        res = await fetch(URL_REQUEST + '/' + id,
-            {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "appilication/json"
-                },
-                body: JSON.stringify({
-                    title: title,
-                    views: views
-                })
-            }
-        );
-    } else {
-        res = await fetch(URL_REQUEST,
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "appilication/json"
-                },
-                body: JSON.stringify({
-                    id: id,
-                    title: title,
-                    views: views
-                })
-            }
-        );
+]
 
+app.get('/products', (req, res) => {
+    let queries = req.query;
+    let titleQ = queries.title ? queries.title : '';
+    let maxView = queries.maxvie ? queries.maxvie : 1E6;
+    let minView = queries.minvie ? queries.minvie : 0;
+    let page = queries.page ? queries.page : 1;
+    let limit = queries.limit ? queries.limit : 4;
+    let result = data.filter(
+        function (e) {
+            return !(e.isDeleted
+                && e.title.includes(titleQ)
+                && e.views >= minView
+                && e.views <= maxView
+            )
+        }
+    )
+    result = result.splice(limit*(page-1),limit);
+    res.send(result)
+})
+app.get('/products/:ids', (req, res) => {
+    let id = req.params.ids;
+    let result = data.find(
+        function (e) {
+            return !(e.isDeleted) && e.id == id
+        }
+    )
+    if (result) {
+        res.send(result)
+    } else {
+        res.status(404).send({
+            message: "id not found"
+        })
     }
-    if (!res.ok) {
-        console.log("bi loi");
-    }
-    GetData();
-    return false;
-}
-async function Delete(id) {
-    let res = await fetch(URL_REQUEST + '/' + id, {
-        method: 'delete'
-    });
-    if (res.ok) {
-        console.log("xoa thanh cong");
-    }
-}
-GetData()
+
+})
+
+app.listen(port, () => {
+    console.log(`Example app listening on port ${port}`)
+})
